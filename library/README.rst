@@ -18,7 +18,7 @@ Make sure you have the following dependencies:
 ::
 
    sudo apt-get update
-   sudo apt-get install python-rpi.gpio python-spidev python-pip python-imaging python-numpy
+   sudo apt-get install python-pip python-imaging python-numpy
 
 Install this library by running:
 
@@ -48,8 +48,10 @@ Modifications include:
 -  ``width``, ``height``, ``rotation``, ``invert``, ``offset_left`` and
    ``offset_top`` parameters can be passed into ``__init__`` for
    alternate displays
--  ``Adafruit_GPIO`` has been replaced with ``RPi.GPIO`` and ``spidev``
-   to closely align with our other software (IE: Raspberry Pi only)
+-  ``Adafruit_GPIO`` has been replaced with duck typing expecting an
+   SPI object with a ``send()`` member and pins with ``on()`` and
+   ``off()`` members, as provided by ``gpiozero`` and MicroPython
+   ``machine.Pin``
 -  Test fixtures have been added to keep this library stable
 
 Pimoroni invests time and resources forking and modifying this open

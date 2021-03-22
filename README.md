@@ -6,15 +6,15 @@
 [![Python Versions](https://img.shields.io/pypi/pyversions/st7735.svg)](https://pypi.python.org/pypi/st7735)
 
 
-Python library to control an ST7735 TFT LCD display. Allows simple drawing on the display without installing a kernel module.
+Python library to control an ST7735 TFT LCD display.  Designed specifically to work with a ST7735 based 160x80 pixel TFT SPI display. (Specifically the 0.96" SPI LCD from Pimoroni).
 
-Designed specifically to work with a ST7735 based 160x80 pixel TFT SPI display. (Specifically the 0.96" SPI LCD from Pimoroni).
+Allows simple drawing on the display via both MicroPython and regular python.  When passing an SPI object with a `send()` member as `port`, can operate the display without installing a kernel module.
 
 Make sure you have the following dependencies:
 
 ````
 sudo apt-get update
-sudo apt-get install python-rpi.gpio python-spidev python-pip python-imaging python-numpy
+sudo apt-get install python-pip python-imaging python-numpy
 ````
 
 Install this library by running:

@@ -26,6 +26,14 @@ from PIL import Image
 from PIL import ImageDraw
 import ST7735 as ST7735
 
+if sys.implementation.name == "micropython":
+    from machine import Pin
+    from machine import SPI
+else:
+    # Use gpizero and spidev
+    from gpiozero import OutputDevice
+    import spidev
+
 SPI_SPEED_MHZ = 10  # Higher speed = higher framerate
 
 if len(sys.argv) > 1:
@@ -40,14 +48,33 @@ breakout into the rear slot.
 Running at: {}MHz
 """.format(SPI_SPEED_MHZ))
 
+if sys.implementation.name == "micropython":
+    # Hardware SPI device
+    spi = machine.SPI(0)
+    sck = machine.Pin(18)
+    smosi = machine.Pin(19)
+    smiso = machine.pin(20)
+    scs = machine.pin(21)
+    spi.init(baudrate=SPI_SPEED_MHZ * 1000000, sck=sck, mosi=smosi, miso=smiso)
+    dc = machine.Pin(2)
+    backlight = machine.Pin(3)
+else:
+    # Set up the spidev device
+    spi = spidev.SpiDev(0, ST7735.BG_SPI_CS_FRONT)
+    spi.mode = 0
+    spi.lsbfirst = False
+    spi.max_speed_hz = SPI_SPEED_MHZ * 1000000
+    # add the send() method as alias to xfer3()
+    spi.send = spi.xfer3
+    # gpiozero pins
+    dc = OutputDevice(9)
+    backlight = OutputDevice(19)
 # Create ST7735 LCD display class.
 disp = ST7735.ST7735(
-    port=0,
-    cs=ST7735.BG_SPI_CS_FRONT,  # BG_SPI_CSB_BACK or BG_SPI_CS_FRONT
-    dc=9,
-    backlight=19,               # 18 for back BG slot, 19 for front BG slot.
+    port=spi,
+    dc=dc,
+    backlight=backlight,               # 18 for back BG slot, 19 for front BG slot.
     rotation=90,
-    spi_speed_hz=SPI_SPEED_MHZ * 1000000
 )
 
 WIDTH = disp.width

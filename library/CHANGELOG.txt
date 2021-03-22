@@ -1,3 +1,9 @@
+0.0.5
+-----
+
+* Remove spidev and GPIO dependencies
+* Changed API to require SPI and Pin objects
+
 0.0.4
 -----
 

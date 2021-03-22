@@ -22,11 +22,7 @@ import numbers
 import time
 import numpy as np
 
-import spidev
-import RPi.GPIO as GPIO
-
-
-__version__ = '0.0.3'
+__version__ = '0.0.5'
 
 BG_SPI_CS_BACK = 0
 BG_SPI_CS_FRONT = 1
@@ -128,16 +124,18 @@ def image_to_data(image, rotation=0):
 class ST7735(object):
     """Representation of an ST7735 TFT LCD."""
 
-    def __init__(self, port, cs, dc, backlight=None, rst=None, width=ST7735_TFTWIDTH,
-                 height=ST7735_TFTHEIGHT, rotation=90, offset_left=None, offset_top=None, invert=True, spi_speed_hz=4000000):
+    def __init__(self, port, dc, backlight=None, rst=None, width=ST7735_TFTWIDTH,
+                 height=ST7735_TFTHEIGHT, rotation=90, offset_left=None, offset_top=None, invert=True):
         """Create an instance of the display using SPI communication.
 
-        Must provide the GPIO pin number for the D/C pin and the SPI driver.
+        Must provide an SPI object in MSB mode, and the pin for dc.
 
-        Can optionally provide the GPIO pin number for the reset pin as the rst parameter.
+        GPIO pins are objects with an on() and off() method.
 
-        :param port: SPI port number
-        :param cs: SPI chip-select number (0 or 1 for BCM
+        Can optionally provide the reset pin as the rst parameter.
+
+        :param port: SPI object
+        :param dc: Pin for dc
         :param backlight: Pin for controlling backlight
         :param rst: Reset pin for ST7735
         :param width: Width of display connected to ST7735
@@ -146,17 +144,10 @@ class ST7735(object):
         :param offset_left: COL offset in ST7735 memory
         :param offset_top: ROW offset in ST7735 memory
         :param invert: Invert display
-        :param spi_speed_hz: SPI speed (in Hz)
 
         """
 
-        GPIO.setwarnings(False)
-        GPIO.setmode(GPIO.BCM)
-
-        self._spi = spidev.SpiDev(port, cs)
-        self._spi.mode = 0
-        self._spi.lsbfirst = False
-        self._spi.max_speed_hz = spi_speed_hz
+        self._spi = port
 
         self._dc = dc
         self._rst = rst
@@ -177,20 +168,12 @@ class ST7735(object):
 
         self._offset_top = offset_top
 
-        # Set DC as output.
-        GPIO.setup(dc, GPIO.OUT)
-
-        # Setup backlight as output (if provided).
+        # Blink the backlight
         self._backlight = backlight
         if backlight is not None:
-            GPIO.setup(backlight, GPIO.OUT)
-            GPIO.output(backlight, GPIO.LOW)
+            self._backlight.off()
             time.sleep(0.1)
-            GPIO.output(backlight, GPIO.HIGH)
-
-        # Setup reset as output (if provided).
-        if rst is not None:
-            GPIO.setup(rst, GPIO.OUT)
+            self._backlight.on()
 
         self.reset()
         self._init()
@@ -202,16 +185,22 @@ class ST7735(object):
         single SPI transaction, with a default of 4096.
         """
         # Set DC low for command, high for data.
-        GPIO.output(self._dc, is_data)
+        if is_data:
+            self._dc.on()
+        else:
+            self._dc.off()
         # Convert scalar argument to list so either can be passed as parameter.
         if isinstance(data, numbers.Number):
             data = [data & 0xFF]
-        self._spi.xfer3(data)
+        self._spi.send(data)
 
     def set_backlight(self, value):
         """Set the backlight on/off."""
         if self._backlight is not None:
-            GPIO.output(self._backlight, value)
+            if value:
+                self._backlight.on()
+            else:
+                self._backlight.off()
 
     @property
     def width(self):
@@ -232,11 +221,11 @@ class ST7735(object):
     def reset(self):
         """Reset the display, if reset pin is connected."""
         if self._rst is not None:
-            GPIO.output(self._rst, 1)
+            self._rst.on()
             time.sleep(0.500)
-            GPIO.output(self._rst, 0)
+            self._rst.off()
             time.sleep(0.500)
-            GPIO.output(self._rst, 1)
+            self._rst.on()
             time.sleep(0.500)
 
     def _init(self):
